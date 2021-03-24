@@ -128,5 +128,6 @@ int main()
     //limit framerate
     std::this_thread::sleep_for(pause_time);
   }
+  endwin();
   return 0;
 }
