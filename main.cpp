@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 #include <ncurses.h>
 #include <chrono>
 #include <thread>
@@ -80,6 +80,13 @@ void Update()
 void Draw()
 {
   system("clear");
+  if(snake_x <= 0 || snake_x >= width -1 || snake_y < 0 || snake_y > height -1)
+  {
+    isGameOver = true;
+    printf("Niichht Bestanden!\n\rMaybe next Time!\n\rPress any Key to exit...");
+    getchar();
+    return;
+  }
   printf("\n\r");
   for(int i = 0; i < width; i++)
   {
@@ -128,5 +135,6 @@ int main()
     //limit framerate
     std::this_thread::sleep_for(pause_time);
   }
+  endwin();
   return 0;
 }
