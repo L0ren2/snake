@@ -1,3 +1,4 @@
+#include <iostream>
 #include <stdio.h>
 #include <ncurses.h>
 #include <chrono>
@@ -16,6 +17,11 @@
 
 const int width = 32;
 const int height = width/2;
+int snake_x = width / 2;
+int snake_y = height / 2;
+int fruit_x;
+int fruit_y;
+int score = 0;
 bool isGameOver = false;
 enum eDirection { STOP = 0, UP, DOWN, LEFT, RIGHT };
 eDirection dir;
@@ -30,10 +36,16 @@ int kbhit()
     return 0;
   }
 }
-//schlange: länge n, head_pos_x, head_pos_y, -> liste (kopf hat pos x und pos y) -> wenn kopf sich bewegt, kommt die alte pos in die nächste node
-//-> warum überhaupt so was kompliziertes? erstmal nur x und y als int speichern
-int snake_x = width / 2;
-int snake_y = height / 2;
+void SpawnFruit()
+{
+  fruit_x = rand() % (width - 1);
+  fruit_y = rand() % (height -1);
+}
+void Setup()
+{
+  initscr();
+  SpawnFruit();
+}
 void Input()
 {
   if(kbhit())
@@ -76,19 +88,25 @@ void Update()
     snake_x++;
     break;
   }
+  if(snake_x == fruit_x && snake_y == fruit_y)
+  {
+    SpawnFruit();
+    score++;
+  }
 }
 void Draw()
 {
   system("clear");
-  if(snake_x <= 0 || snake_x >= width -1 || snake_y < 0 || snake_y > height -1)
+  if(snake_x < 0 || snake_x >= width || snake_y < 0 || snake_y >= height)
   {
     isGameOver = true;
-    printf("Niichht Bestanden!\n\rMaybe next Time!\n\rPress any Key to exit...");
-    getchar();
+    printf("Nicht Bestanden!\n\rScore: %d\n\rPress enter to exit...", score);
+    std::cin.get();
     return;
   }
+  printf("Score: %d", score);
   printf("\n\r");
-  for(int i = 0; i < width; i++)
+  for(int i = 0; i < width + 2; i++)
   {
     printf("#");
   }
@@ -98,11 +116,15 @@ void Draw()
   for(int i = 0; i < height; i++)
   {
     printf("#");
-    for(int j = 1; j < width - 1; j++)
+    for(int j = 0; j < width; j++)
     {
       if(j == snake_x && i == snake_y)
       {
         printf("O");
+      }
+      else if(j == fruit_x && i == fruit_y)
+      {
+        printf("F");
       }
       else 
       {
@@ -113,7 +135,7 @@ void Draw()
     printf("\n\r");
   }
 
-  for(int i = 0; i < width; i++)
+  for(int i = 0; i < width + 2; i++)
   {
     printf("#");
   }
@@ -124,7 +146,7 @@ std::chrono::milliseconds pause_time(145);
 int main()
 {
   //used to initialize ncurses
-  initscr();
+  Setup();
   while(!isGameOver)
   {
     //time for getch() to block (ms)
