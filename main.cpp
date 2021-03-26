@@ -23,18 +23,13 @@ int fruit_x;
 int fruit_y;
 int score = 0;
 bool isGameOver = false;
-bool isFruitEaten = true;
 enum eDirection { STOP = 0, UP, DOWN, LEFT, RIGHT };
 eDirection dir;
 
-void SpawnFruitIf(bool& fruitEaten)
+void SpawnFruit()
 {
-  if(fruitEaten)
-  {
-    fruit_x = rand() % (width - 1);
-    fruit_y = rand() % (height -1);
-  }
-  fruitEaten = false;
+  fruit_x = rand() % (width - 1);
+  fruit_y = rand() % (height -1);
 }
 void Input()
 {
@@ -79,7 +74,7 @@ void Update()
   }
   if(snake_x == fruit_x && snake_y == fruit_y)
   {
-    isFruitEaten = true;
+    SpawnFruit();
     score++;
   }
 }
@@ -136,11 +131,11 @@ void Draw()
 std::chrono::milliseconds pause_time(145);
 int main()
 {
+  SpawnFruit();
   while(!isGameOver)
   {
     Input();
     Update();
-    SpawnFruitIf(isFruitEaten);
     Draw();
     std::this_thread::sleep_for(pause_time);
   }
