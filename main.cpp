@@ -17,8 +17,9 @@
 
 const int width = 32;
 const int height = width/2;
-int snake_x = width / 2;
-int snake_y = height / 2;
+const int snake_array_size = width * height + 2;
+int snake_array_x[snake_array_size];
+int snake_array_y[snake_array_size];
 int fruit_x;
 int fruit_y;
 int score = 0;
@@ -43,8 +44,22 @@ void SpawnFruit()
 }
 void Setup()
 {
+  //init ncurses
   initscr();
+  //place snake head in middle
+  snake_array_x[0] = width / 2;
+  snake_array_y[0] = height / 2;
+  for(int i = 1; i < snake_array_size; i++)
+  {
+    snake_array_x[i] = -1;
+    snake_array_y[i] = -1;
+  }
+  //make the first fruit
   SpawnFruit();
+}
+void End()
+{
+  endwin();
 }
 void Input()
 {
@@ -73,31 +88,50 @@ void Input()
 }
 void Update() 
 {
+  int last_iteration_node_x = snake_array_x[0];
+  int last_iteration_node_y = snake_array_y[0];
+  //set new head pos
   switch(dir)
   {
     case eDirection::UP:
-    snake_y--;
+    snake_array_y[0]--;
     break;
     case eDirection::LEFT:
-    snake_x--;
+    snake_array_x[0]--;
     break;
     case eDirection::DOWN:
-    snake_y++;
+    snake_array_y[0]++;
     break;
     case eDirection::RIGHT:
-    snake_x++;
+    snake_array_x[0]++;
     break;
   }
-  if(snake_x == fruit_x && snake_y == fruit_y)
+  //check if fruit was eaten
+  if(snake_array_x[0] == fruit_x && snake_array_y[0] == fruit_y)
   {
     SpawnFruit();
     score++;
+  }
+
+  //update the tail
+  for(int i = 1; i <= score; i++)
+  {
+    //swap principle:
+    int temp_x, temp_y;
+    
+    temp_x = last_iteration_node_x;
+    last_iteration_node_x = snake_array_x[i];
+    snake_array_x[i] = temp_x;
+
+    temp_y = last_iteration_node_y;
+    last_iteration_node_y = snake_array_y[i];
+    snake_array_y[i] = temp_y;    
   }
 }
 void Draw()
 {
   system("clear");
-  if(snake_x < 0 || snake_x >= width || snake_y < 0 || snake_y >= height)
+  if(snake_array_x[0] < 0 || snake_array_x[0] >= width || snake_array_y[0] < 0 || snake_array_y[0] >= height)
   {
     isGameOver = true;
     printf("Nicht Bestanden!\n\rScore: %d\n\rPress enter to exit...", score);
@@ -105,6 +139,12 @@ void Draw()
     return;
   }
   printf("Score: %d", score);
+  //DEBUG
+  /*printf("   POS_HEAD_X: %d", snake_array_x[0]);
+  printf("   POS_HEAD_Y: %d", snake_array_y[0]);
+
+  printf("   POS_o_X: %d", snake_array_x[1]);
+  printf("   POS_o_Y: %d", snake_array_y[1]);*/
   printf("\n\r");
   for(int i = 0; i < width + 2; i++)
   {
@@ -118,15 +158,28 @@ void Draw()
     printf("#");
     for(int j = 0; j < width; j++)
     {
-      if(j == snake_x && i == snake_y)
+      bool should_print_o = false;
+      for(int scr_cnt = 1; scr_cnt <= score; scr_cnt++)
+      {
+        if(j == snake_array_x[scr_cnt] && i == snake_array_y[scr_cnt])
+        {
+          should_print_o = true;
+          break;
+        }
+      }
+      if(j == snake_array_x[0] && i == snake_array_y[0])
       {
         printf("O");
+      }
+      else if(should_print_o)
+      {
+        printf("o");
       }
       else if(j == fruit_x && i == fruit_y)
       {
         printf("F");
       }
-      else 
+      else
       {
         printf(" ");
       }
@@ -157,6 +210,6 @@ int main()
     //limit framerate
     std::this_thread::sleep_for(pause_time);
   }
-  endwin();
+  End();
   return 0;
 }
