@@ -1,2 +1,2 @@
 # snake
-snake game for the console
+snake game for the terminal
