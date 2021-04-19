@@ -1,5 +1,5 @@
 #include <iostream>
-#include <stdio.h>
+#include <windows.h>  
 #include <conio.h>
 #include <chrono>
 #include <thread>
@@ -18,18 +18,77 @@
 const int width = 32;
 const int height = width / 2;
 const int snake_array_size = width * height + 2;
+
+char game_board_buffer[height+1][width + 2];
+char prev_board_buffer[height+1][width + 2];
+
 int snake_array_x[snake_array_size];
 int snake_array_y[snake_array_size];
+
 int fruit_x;
 int fruit_y;
+
 int score = 0;
 bool isGameOver = false;
+
 enum eDirection { STOP = 0, UP, DOWN, LEFT, RIGHT };
 eDirection dir;
+
+// Functions for managing output //
+void setCursorPosition(int x, int y)
+{
+  static const HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  std::cout.flush();
+  COORD coord = { (SHORT)x, (SHORT)y };
+  SetConsoleCursorPosition(hOut, coord);
+}
+void cls()
+{
+  //some extra padding to ensure that the screen is empty afterwards
+  for(int y = 0; y < height + 10; y++)
+  {
+    for(int x = 0; x < width + 10; x++)
+    {
+      setCursorPosition(x, y);
+      std::cout << " ";
+    }
+  }
+  setCursorPosition(0, 0);
+}
+void mk_empty_board()
+{
+  for(int x = 0; x < width+1; x++)
+  {
+    game_board_buffer[0][x] = '#';
+    game_board_buffer[height][x] = '#';
+  }
+  for(int y = 1; y < height; y++)
+  {
+    game_board_buffer[y][0] = '#';
+    game_board_buffer[y][width] = '#';
+    for(int x = 1; x < width; x++)
+    {
+      game_board_buffer[y][x] = ' ';
+    }
+  }
+}
+// Functions for managing output //
+
+
+bool wall_hit(){ return snake_array_x[0] <= 0 || snake_array_x[0] >= width || snake_array_y[0] <= 0 || snake_array_y[0] >= height; }
+bool tail_hit()
+{
+  for(int i = 1; i <= score; i++)
+  {
+    if(snake_array_x[0] == snake_array_x[i] && snake_array_y[0] == snake_array_y[i])
+      return true;
+  }
+  return false;
+}
 void SpawnFruit()
 {
-  fruit_x = rand() % (width - 1);
-  fruit_y = rand() % (height -1);
+  fruit_x = (rand() % (width - 1)) + 1;
+  fruit_y = (rand() % (height -1)) + 1;
 }
 void Setup()
 {
@@ -40,8 +99,21 @@ void Setup()
     snake_array_x[i] = -1;
     snake_array_y[i] = -1;
   }
+  memset((char*)game_board_buffer, 0, (height+1) * (width + 2));
+  memset((char*)prev_board_buffer, 0, (height+1) * (width + 2));
+  mk_empty_board();
+  system("cls");
   SpawnFruit();
 }
+void Cleanup()
+{
+  //empty the whole terminal. everything.
+  system("cls");
+}
+
+
+
+
 void Input()
 {
   if(_kbhit())
@@ -108,75 +180,63 @@ void Update()
     old_pos_y = temp_y;
   }
 }
-bool wall_hit(){ return snake_array_x[0] < 0 || snake_array_x[0] >= width || snake_array_y[0] < 0 || snake_array_y[0] >= height; }
-bool tail_hit()
-{
-  for(int i = 1; i <= score; i++)
-  {
-    if(snake_array_x[0] == snake_array_x[i] && snake_array_y[0] == snake_array_y[i])
-      return true;
-  }
-  return false;
-}
 void Draw()
 {
-  system("cls");
   if(wall_hit() || tail_hit())
   {
     isGameOver = true;
-    printf("Nicht Bestanden!\nScore: %d\nPress enter to quit...\n", score);
+    cls();
+    setCursorPosition(0, 0);
+    std::cout << "Nicht Bestanden!\nScore: " << score << "\nPress enter to quit...\n";
     do { } while (std::cin.get() != '\n');
     return;
   }
-  printf("Score: %d", score);
-  printf("\n");
-  for(int i = 0; i < width + 2; i++)
+  setCursorPosition(0, 0);
+  std::cout << "Score: " << score << "\n";
+  setCursorPosition(0, 0);
+  int start_x = 0;
+  int start_y = 3;
+  
+  for(int y = 0; y < height+1; y++)
   {
-    printf("#");
-  }
-  printf("\n");
-
-
-  for(int i = 0; i < height; i++)
-  {
-    printf("#");
-    for(int j = 0; j < width; j++)
+    for(int x = 0; x < width+2; x++)
     {
+
       bool print_o = false;
       for(int scr_cnt = 1; scr_cnt <= score; scr_cnt++)
       {
-        if(i == snake_array_y[scr_cnt] && j == snake_array_x[scr_cnt])
+        if(y == snake_array_y[scr_cnt] && x == snake_array_x[scr_cnt])
         {
           print_o = true;
           break;
         }
       }
-      if(j == snake_array_x[0] && i == snake_array_y[0])
+      if(x == snake_array_x[0] && y == snake_array_y[0])
       {
-        printf("O");
+        game_board_buffer[y][x] = 'O';
       }
       else if(print_o)
       {
-        printf("o");
+        game_board_buffer[y][x] = 'o';
       }
-      else if(j == fruit_x && i == fruit_y)
+      else if(x == fruit_x && y == fruit_y)
       {
-        printf("F");
+        game_board_buffer[y][x] = 'F';
       }
-      else 
-      {
-        printf(" ");
-      }
-    }
-    printf("#");
-    printf("\n");
-  }
 
-  for(int i = 0; i < width + 2; i++)
-  {
-    printf("#");
+
+      if(game_board_buffer[y][x] == prev_board_buffer[y][x])
+      {
+        continue;
+      }
+      setCursorPosition(x + start_x, y + start_y);
+      std::cout << game_board_buffer[y][x];
+      setCursorPosition(0, 0);
+    }
   }
-  printf("\n");
+  std::cout.flush();
+  memcpy(prev_board_buffer, game_board_buffer, height*(width+2));
+  mk_empty_board();
 }
 
 std::chrono::milliseconds pause_time(145);
@@ -190,5 +250,6 @@ int main()
     Draw();
     std::this_thread::sleep_for(pause_time);
   }
+  Cleanup();
   return 0;
 }
